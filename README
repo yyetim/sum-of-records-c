@@ -10,21 +10,27 @@ consumes the output of functions P1 and P2. now, P1 may be producing
 two integers, and P2 may be producing two floats. the function C, as a
 callee, needs to differentiate these types as a user.
 i.e.,
-p1output_t P1();
-p2output_t P2();
-void C(cinput_t cinput);
+. p1output_t P1();
+. p2output_t P2();
+. void C(cinput_t cinput);
 
 we would want to have
-struct p1output_t {...};
-struct p2output_t {...};
-enum cinput_t { struct p1output_t p1; struct p2output_t p2 };
+. struct p1output_t {...};
+. struct p2output_t {...};
+. union cinput_u { struct p1output_t p1; struct p2output_t p2 };
 
-now many bugs come after this point. when C() wants to use cinput, it
-needs to cast it either to p1output_t or p2output_t. for a complicated
-software, this operation is very error-prone.
+now, C() needs to differentiate where this data comes from:
+- struct cinput_t { int whichFunction, cinput_u cinput };
+
+bugs come after this point. when C() wants to use cinput, it needs to
+cast it either to p1output_t or p2output_t. it can do that by checking
+whichFunction. however, this also assumes that the cinput_t was packed
+correctly in the first place. for a complicated software, these
+operations are very error-prone. 
 
 furthermore, if you want to have P3() to feed into C(), then you need
-to change many things.
+to change many things. also, you may need another sum-of-records-c
+type, so you'll have to do it all over again.
 
 this simple library provides a way of creating this abstraction
 automatically (so less error-prone) and optionally enables dynamic
@@ -33,7 +39,7 @@ testing stage.
 
 i) what is a sum type?
 an instance of a sum type is an object that can be one of many things
-(similar to enum in C, or an object of an abstract class with many
+(similar to union in C, or an object of an abstract class with many
 subclasses in OO). this instance may only represent one of these
 many things.
 e.g.:
@@ -41,7 +47,7 @@ data IntFloat = IntS Int | FloatS Float -- define the sum type
 x = IntS 3
 y = FloatS 7.0
 -- in this example x and y have the same type, IntFloat, while
-   themselves being different types
+   themselves carrying different types in them
 ii) what is a record type?
 a collection of several objects (similar to struct in C, or members of
 a class in OO)
@@ -51,6 +57,10 @@ let x = IntFloat { intR = 3, floatR = 7.0 }
 -- in this example, x contains both the integer value and the float
    value
 
+functional languages such as Haskell and OCaml give us static strong
+typing to ensure safety with these types but C does not provide such
+features. below is how this library works to emulate these features.
+   
 example usage
 =============
 import SumOfRecordsC
@@ -70,17 +80,19 @@ myTypeStrings = [
 
 main = do
   printAll wordsForType myTypeStrings True
-  
+
+USING THE OUTPUT
 ===============================================================================
-running the code above in haskell produces the C code at the end of this README. now we
-can put this in an include file and use in C as follows:
+running the code above in haskell produces the C code at the end of
+this README. now we can put this in an include file and use in C as
+follows:
 i) create a new type:
 sum_of_records_t sorn = NONE_C();		// create NONE instance
 sum_of_records_t sorp = PUSH_C(true, 4);	// create PUSH instance
 
 ii) act on depending type
 switch (TYPE(sorp)) { 		     		// act on type
-       case NONE_E: // wouldn't be here
+       case NONE_E: // would not come here
        	    break;
        case PUSH_E:
        	    printf("%d", PUSH_D(sorp).what);    // deconstruct sorp as a PUSH
@@ -93,11 +105,10 @@ the code below would fail at the assertion inside the PUSH_D():
 int a = PUSH_D(sorn).what; // deconstruct sorn as a PUSH
 
 REMARKS: always use x_C() to create an item, TYPE() to check the type,
-x_D() to deconstruct the item. this hopefully will make sure that
-nothing will go wrong
-===============================================================================
-// GENERATED C CODE:
+x_D() to deconstruct the item. this hopefully will eliminate casting bugs.
 
+GENERATED C CODE
+===============================================================================
 #include <assert.h>
 #define TYPE(x) ((x).e)
 enum SumOfRecords {
