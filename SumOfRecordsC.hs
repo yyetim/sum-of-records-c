@@ -11,6 +11,7 @@ polymorphicEnumPostfix = "_E"
 constructorPostfix = "_C"
 deconstructorPostfix = "_D"
 unionMemberPostfix = "_U"
+stringPostfix = "_STR"
 defaultIndent = "        "
 enumInStruct = "e"
 unionInStruct = "u"
@@ -100,9 +101,19 @@ printDeconstructorUnsafe mainStruct msg = do
   putStr $ "#define " ++ (name msg) ++ deconstructorPostfix ++ "("
     ++ mainStruct ++ ") (" ++ mainStruct ++ ").u." ++ (name msg)
     ++ unionMemberPostfix ++ "\n"
-  
+
+printString stringName mainStruct msgList = do
+  putStr $ "__attribute__((unused)) static char *\n"
+  putStr $ stringName ++ "(" ++ mainStruct ++ typePostfix ++ " " ++ mainStruct
+  putStr $ ") {\n"
+  putStr $ defaultIndent ++ "switch(TYPE(" ++ mainStruct ++ ")) {\n"
+  mapM_ (\msg -> putStr $ defaultIndent ++ "case "
+                 ++ ((name msg) ++ polymorphicEnumPostfix) ++ ": return \""
+                 ++ (name msg) ++ "\";\n") msgList
+  putStr $ defaultIndent ++ "default: assert(0);\n"
+  putStr $ defaultIndent ++ "}\n}"
                
-process mainStruct enumName msgList dynamicTypeCheck = do
+process mainStruct enumName msgList dynamicTypeCheck stringName = do
   putStr $ "enum " ++ enumName ++ " {\n" ++ defaultIndent
   putStr $ intercalate (",\n" ++ defaultIndent)
     (map (\msg -> (name msg) ++ polymorphicEnumPostfix) msgList)
@@ -115,17 +126,20 @@ process mainStruct enumName msgList dynamicTypeCheck = do
     mapM_ (printDeconstructorSafe mainStruct) msgList
     else
     mapM_ (printDeconstructorUnsafe mainStruct) msgList
+  printString (stringName ++ stringPostfix) mainStruct msgList
                  
 printAll wordsForType myTypeStrings dynamicTypeCheck = do
   putStr "#include <assert.h>\n"
   putStr $ "#define TYPE(x) ((x)." ++ enumInStruct ++ ")\n"
-  process mainStruct enumName myTypes dynamicTypeCheck
+  process mainStruct enumName myTypes dynamicTypeCheck stringName
   where
     myTypes = map createPolymorphicType myTypeStrings
     createPolymorphicType (consName, productTerms) =
       PolymorphicType {name = consName, contents = productTerms}
     little s = map toLower s
+    big s = map toUpper s
     capitalize [] = []
     capitalize (x : rest) = (toUpper x) : (little rest)
-    (mainStruct, enumName) = (intercalate "_" (map little wordsForType),
-                              concat (map capitalize wordsForType))
+    (mainStruct, enumName, stringName) = (intercalate "_" (map little wordsForType),
+                                          concat (map capitalize wordsForType),
+                                          intercalate "_" (map big wordsForType))
