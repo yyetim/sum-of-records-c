@@ -155,3 +155,11 @@ PUSH_D(sum_of_records_t sum_of_records) {
         assert(sum_of_records.e == PUSH_E);
         return sum_of_records.u.PUSH_U;
 }
+__attribute__((unused)) static char *
+SUM_OF_RECORDS_STR(sum_of_records_t sum_of_records) {
+        switch(TYPE(sum_of_records)) {
+        case NONE_E: return "NONE";
+        case PUSH_E: return "PUSH";
+        default: assert(0);
+        }
+}
