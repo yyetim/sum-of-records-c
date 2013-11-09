@@ -5,7 +5,14 @@ would simulate the sum of records type. when using this type, the
 type-checking can be done dynamically for testing and it can be
 disabled for performance.
 
-an example usage: assume functions P1, P2 and C, where function C
+to use
+======
+Download the library and install it with
+$ cabal install
+
+an example usage 
+================
+Assume functions P1, P2 and C, where function C
 consumes the output of functions P1 and P2. now, P1 may be producing
 two integers, and P2 may be producing two floats. the function C, as a
 callee, needs to differentiate these types as a user.
@@ -81,8 +88,8 @@ myTypeStrings = [
 main = do
   printAll wordsForType myTypeStrings True
 
-USING THE OUTPUT
-===============================================================================
+using the output
+================
 running the code above in haskell produces the C code at the end of
 this README. now we can put this in an include file and use in C as
 follows:
@@ -107,8 +114,8 @@ int a = PUSH_D(sorn).what; // deconstruct sorn as a PUSH
 REMARKS: always use x_C() to create an item, TYPE() to check the type,
 x_D() to deconstruct the item. this hopefully will eliminate casting bugs.
 
-GENERATED C CODE
-===============================================================================
+generated c code
+================
 #include <assert.h>
 #define TYPE(x) ((x).e)
 enum SumOfRecords {
