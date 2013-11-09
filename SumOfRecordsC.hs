@@ -132,6 +132,7 @@ printAll wordsForType myTypeStrings dynamicTypeCheck = do
   putStr "#include <assert.h>\n"
   putStr $ "#define TYPE(x) ((x)." ++ enumInStruct ++ ")\n"
   process mainStruct enumName myTypes dynamicTypeCheck stringName
+  putStrLn ""
   where
     myTypes = map createPolymorphicType myTypeStrings
     createPolymorphicType (consName, productTerms) =
